@@ -3,7 +3,18 @@ import * as sharp from "sharp";
 import { S3Event } from "./types";
 import { PromiseResult } from "aws-sdk/lib/request";
 
-const s3 = new S3();
+const s3 = new S3({
+    region: "eu-west-3",
+    accessKeyId: process.env.ACCESS_KEY_S3,
+    secretAccessKey: process.env.SECRET_KEY_S3,
+    signatureVersion: "v4",
+});
+
+console.log("🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩");
+console.log(process.env.ACCESS_KEY_S3);
+console.log(process.env.SECRET_KEY_S3);
+console.log("🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦");
+
 const mediaConvert = new MediaConvert({
     endpoint: process.env.MEDIA_CONVERT_ENDPOINT,
 });
@@ -19,9 +30,9 @@ export class ConvertService {
         };
         const mediaSource = await s3.getObject(getObjectParams).promise();
 
-        console.log('🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩')
-        console.log(mediaSource)
-        console.log('🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦')
+        console.log("🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩");
+        console.log(mediaSource);
+        console.log("🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦");
 
         const isImage = mediaSource.ContentType?.includes("image");
 
@@ -75,8 +86,7 @@ export class ConvertService {
         oldPath: string,
         newPath: string
     ): MediaConvert.Types.CreateJobRequest => ({
-        Role:
-            process.env.AWS_MEDIA_CONVERT_ROLE,
+        Role: process.env.AWS_MEDIA_CONVERT_ROLE,
         Settings: {
             TimecodeConfig: {
                 Source: "ZEROBASED",
