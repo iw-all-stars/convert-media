@@ -17,6 +17,7 @@
     "typescript": "^5.0.4"
   },
   "dependencies": {
+    "@types/sharp": "^0.32.0",
     "aws-lambda": "^1.0.7",
     "aws-sdk": "^2.1373.0",
     "crypto-js": "^4.1.1",
