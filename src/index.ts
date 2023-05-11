@@ -6,6 +6,7 @@ export async function handler(event: {
 }): Promise<any> {
     try {
         const s3Event = event.Records[0].s3
+        console.log('s3Event : ', s3Event)
         const converter = new ConvertService(s3Event);
         await converter.handle();
     } catch (e) {
