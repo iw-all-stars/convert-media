@@ -3,17 +3,14 @@ import * as sharp from "sharp";
 import { S3Event } from "./types";
 import { PromiseResult } from "aws-sdk/lib/request";
 
+const TARGET_BUCKET = "challengesem2converted";
+
 const s3 = new S3({
     region: "eu-west-3",
     accessKeyId: process.env.ACCESS_KEY_S3,
     secretAccessKey: process.env.SECRET_KEY_S3,
     signatureVersion: "v4",
 });
-
-console.log("🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩");
-console.log(process.env.ACCESS_KEY_S3);
-console.log(process.env.SECRET_KEY_S3);
-console.log("🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦");
 
 const mediaConvert = new MediaConvert({
     endpoint: process.env.MEDIA_CONVERT_ENDPOINT,
@@ -30,7 +27,7 @@ export class ConvertService {
         };
         const mediaSource = await s3.getObject(getObjectParams).promise();
 
-        console.log("🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩");
+        console.log("🟩🟩🟩🟩🟩mediaSource🟩🟩🟩🟩");
         console.log(mediaSource);
         console.log("🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦");
 
@@ -46,28 +43,21 @@ export class ConvertService {
     private async _convertImageToJpg(
         source: PromiseResult<S3.GetObjectOutput, AWSError>
     ): Promise<void> {
-        try {
-            const convertedImage = await sharp(source.Body as Buffer)
-                .jpeg()
-                .toBuffer();
+        const convertedImage = await sharp(source.Body as Buffer)
+            .jpeg()
+            .toBuffer();
 
-            const targetBucket = "challengesem2converted"; // Remplacez par votre bucket de destination
-            const targetKey = `${this.s3Event.object.key}.jpg`;
-            const putObjectParams: AWS.S3.PutObjectRequest = {
-                Bucket: targetBucket,
-                Key: targetKey,
-                Body: convertedImage,
-            };
-            await s3.putObject(putObjectParams).promise();
+        const putObjectParams: AWS.S3.PutObjectRequest = {
+            Bucket: TARGET_BUCKET,
+            Key: this.s3Event.object.key,
+            Body: convertedImage,
+        };
+        await s3.putObject(putObjectParams).promise();
 
-            console.log(
-                `Conversion réussie : ${this.s3Event.object.key} converti en ${targetKey}`
-            );
-            return;
-        } catch (error) {
-            console.error("Erreur lors de la conversion :", error);
-            throw error;
-        }
+        console.log(
+            `Conversion successfull -> ${TARGET_BUCKET} / ${this.s3Event.object.key}`
+        );
+        return;
     }
 
     private async _convertVideoToMp4(
@@ -77,7 +67,7 @@ export class ConvertService {
             Job: { Id: jobId },
         } = await mediaConvert
             .createJob(
-                this._getMediaConvertParamsForVideo("oldPath", "newPath")
+                this._getMediaConvertParamsForVideo(this.s3Event.object.key, this.s3Event.object.key)
             )
             .promise();
     }
@@ -129,7 +119,7 @@ export class ConvertService {
                     OutputGroupSettings: {
                         Type: "FILE_GROUP_SETTINGS",
                         FileGroupSettings: {
-                            Destination: `s3://${process.env.AWS_BUCKET}/${newPath}`,
+                            Destination: `s3://${TARGET_BUCKET}/${newPath}`,
                             DestinationSettings: {
                                 S3Settings: {
                                     AccessControl: {
@@ -143,7 +133,7 @@ export class ConvertService {
             ],
             Inputs: [
                 {
-                    FileInput: `s3://${process.env.AWS_BUCKET}/${oldPath}`,
+                    FileInput: `s3://${this.s3Event.bucket.name}/${oldPath}`,
                     TimecodeSource: "ZEROBASED",
                     VideoSelector: {},
                     AudioSelectors: {
